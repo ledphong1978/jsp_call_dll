@@ -1,0 +1,115 @@
+﻿สร้างจาก eclipse-jee-kepler-SR2-Java8-win32-x86_64
+และ apache-tomcat-7.0.42
+และ jna-3.2.5.jar
+
+โค้ดนี้เป็นโค้ด หน เลิศพงศ์ คอไอที หรือ ledphong คอไอที หรือ ledphong@gmail.com
+หากท่านจะนำไปสอนหรือไปเผยแพร่ หรือวิทยาทาน กรุณาให้เครดิตคนเจ้าของลิขสิทธิ์ด้วย
+และไม่อนุญาต ให้นำไปเพื่อการค้าจนกว่าจะได้รับอนุญาตจากเจ้าของผลงาน
+2.โปรแกรม eclipse-jee-kepler-SR2-Java8-win32-x86_64
+อ่านค่าตามหมายเลข 1
+เพื่อแสดงข้อมูลทางเว็บเพจ JSP Servlet
+========================
+ดาวน์โหลด Eclipse Kepler SR2 และ jna-3.2.5.jar
+https://www.eclipse.org/downloads/packages/release/kepler/sr2-java8-patches
+http://www.java2s.com/Code/Jar/j/Downloadjna325jar.htm
+========================
+DllTest.java
+========================
+package com.java.test;
+
+import com.sun.jna.Library;
+import com.sun.jna.Native;
+import com.sun.jna.ptr.IntByReference;
+
+public class DllTest {
+
+    public interface CLibrary extends Library {
+        CLibrary INSTANCE = (CLibrary)Native.loadLibrary("C:\\scapi.dll", CLibrary.class);
+
+        String calculateAge(int birthYear, int birthMonth, int birthDay, IntByReference ageYears, IntByReference ageMonths, IntByReference ageDays);
+
+    }
+
+    public String calculateAge(int birthYear, int birthMonth, int birthDay, int[] ageYears, int[] ageMonths, int[] ageDays) {
+        IntByReference ageYearsRef = new IntByReference(ageYears[0]);
+        IntByReference ageMonthsRef = new IntByReference(ageMonths[0]);
+        IntByReference ageDaysRef = new IntByReference(ageDays[0]);
+
+        String result = CLibrary.INSTANCE.calculateAge(birthYear, birthMonth, birthDay, ageYearsRef, ageMonthsRef, ageDaysRef);
+
+        ageYears[0] = ageYearsRef.getValue();
+        ageMonths[0] = ageMonthsRef.getValue();
+        ageDays[0] = ageDaysRef.getValue();
+
+        return result;
+    }
+}
+========================
+calculateAge.jsp
+========================
+<%@ page import="com.java.test.*" %>
+<%@ page import="com.sun.jna.Library" %>
+<%@ page import="com.sun.jna.Native" %>
+<%
+    // Retrieve birth date values from request parameters
+    int birthYear = Integer.parseInt(request.getParameter("birthYear"));
+    int birthMonth = Integer.parseInt(request.getParameter("birthMonth"));
+    int birthDay = Integer.parseInt(request.getParameter("birthDay"));
+
+    // Initialize age arrays
+    int[] ageYears = new int[1];
+    int[] ageMonths = new int[1];
+    int[] ageDays = new int[1];
+
+    // Call the calculateAge method
+    DllTest dllTest = new DllTest();
+    String result = dllTest.calculateAge(birthYear, birthMonth, birthDay, ageYears, ageMonths, ageDays);
+
+    // Display the result
+    out.println("Result: " + result);
+    out.println("Age: " + ageYears[0] + " years, " + ageMonths[0] + " months, " + ageDays[0] + " days");
+%>
+========================
+index.jsp
+========================
+<%@ page import="com.java.test.*" %>
+<%@ page import="com.sun.jna.Library" %>
+<%@ page import="com.sun.jna.Native" %>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+    <title>คำนวณอายุ</title>
+    <script>
+        function calculateAge() {
+            var birthYear = document.getElementById("birthYearInput").value;
+            var birthMonth = document.getElementById("birthMonthInput").value;
+            var birthDay = document.getElementById("birthDayInput").value;
+
+            document.getElementById("demo").innerHTML = "Calculating age...";
+
+            // AJAX request to the server
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState === 4 && this.status === 200) {
+                    document.getElementById("demo").innerHTML = this.responseText;
+                }
+            };
+            xhttp.open("POST", "calculateAge.jsp", true);
+            xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            xhttp.send("birthYear=" + birthYear + "&birthMonth=" + birthMonth + "&birthDay=" + birthDay);
+        }
+    </script>
+</head>
+<body>
+	<label for="birthYear">Year:</label>
+    <input type="number" id="birthYearInput" placeholder="Birth Year"><br><br>
+    <label for="birthMonth">Month:</label>
+    <input type="number" id="birthMonthInput" placeholder="Birth Month"><br><br>
+    <label for="birthDay">Day:</label>
+    <input type="number" id="birthDayInput" placeholder="Birth Day"><br><br>
+    <button onclick="calculateAge()">Calculate Age</button><br><br>
+    <div id="demo"></div>
+</body>
+</html>

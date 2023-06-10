@@ -1,0 +1,128 @@
+﻿สร้างจาก Dev-C++ 5.11	
+
+โค้ดนี้เป็นโค้ด หน เลิศพงศ์ คอไอที หรือ ledphong คอไอที หรือ ledphong@gmail.com
+หากท่านจะนำไปสอนหรือไปเผยแพร่ หรือวิทยาทาน กรุณาให้เครดิตคนเจ้าของลิขสิทธิ์ด้วย
+และไม่อนุญาต ให้นำไปเพื่อการค้าจนกว่าจะได้รับอนุญาตจากเจ้าของผลงาน
+=========================
+สร้างและอ่านค่า dll file เพื่อไปแสดงผลที่เว็บเพจ JSP Servlet
+1.ใช้ Dev-C++ 5.11 สร้าง .dll file
+2.ใช้ eclipse-jee-kepler-SR2-Java8-win32-x86_64 อ่านไฟล์ .dll file ผ่านเว็บเพจ JSP Servlet
+=========================
+1.โปรแกรม Dev-C++ 5.11 สร้าง dll file
+(Dev-Cpp 5.11 TDM-GCC 4.9.2 Setup)
+ตัวอย่าง คำนวณอายุ ตรวจสอบ leap year
+และอัตโนมัติตามปีงบประมาณ
+=========================
+Download Dev-C++ 5.11
+https://sourceforge.net/projects/orwelldevcpp/files/latest/download
+=========================
+เริ่มต้นกับ Dev-C++ 5.11
+1.ไปที่ File เลือก New เลือก project
+2.แท็บ Basic เลือก DLL
+3.เลือก C++ Project
+3.พิมพ์ชื่อโปรเจ็คว่า scapi
+4.คลิ๊กปุ่ม OK
+=========================
+ปกติการสร้าง dll file จะมี 2 ไฟล์หลักๆใน Dev-C++ 5.11
+มี dllmain.c และ dll.h
+=========================
+dllmain.c
+=========================
+#include <stdio.h>
+#include <time.h>
+#include "dll.h"
+
+int isLeapYear(int year) {
+    if (year % 4 == 0) {
+        if (year % 100 != 0 || year % 400 == 0) {
+            return 1;  // Leap year
+        }
+    }
+    return 0;  // Not a leap year
+}
+
+void calculateAge(int birthYear, int birthMonth, int birthDay, int* ageYears, int* ageMonths, int* ageDays) {
+    //==========new=========================
+    // Get the current date
+    time_t now = time(NULL);
+    struct tm* localTime = localtime(&now);
+    int currentYear = localTime->tm_year + 1900;
+    int currentMonth = localTime->tm_mon + 1;
+    int currentDay = localTime->tm_mday;
+
+    // Check if the current month is greater than or equal to 10
+    if (currentMonth >= 10) {
+        currentYear = 1;  
+        currentMonth = 10;
+        currentDay = 1;
+    }else{
+    	currentYear -= 1;  // Subtract 1 year
+        currentMonth = 10;
+        currentDay = 1;
+	}
+    //======================================
+
+    // Calculate the age in years
+    *ageYears = currentYear - birthYear;
+
+    // Check for leap year
+    int isCurrentYearLeap = isLeapYear(currentYear);
+
+    // Calculate the age in months and days
+    if (birthMonth > currentMonth || (birthMonth == currentMonth && birthDay > currentDay)) {
+        // Subtract 1 year if the birth date is later in the current year
+        (*ageYears)--;
+        currentMonth += 12;
+    }
+    *ageMonths = currentMonth - birthMonth;
+    *ageDays = currentDay - birthDay;
+
+    // Adjust the age if the birth day is later in the current month
+    if (*ageDays < 0) {
+        (*ageMonths)--;
+        // Get the number of days in the previous month
+        int daysInPreviousMonth;
+        if (currentMonth - 1 == 2) {
+            // Handle February separately for leap year check
+            if (isLeapYear(currentYear)) {
+                daysInPreviousMonth = 29;
+            } else {
+                daysInPreviousMonth = 28;
+            }
+        } else if (currentMonth - 1 == 4 || currentMonth - 1 == 6 || currentMonth - 1 == 9 || currentMonth - 1 == 11) {
+            daysInPreviousMonth = 30;
+        } else {
+            daysInPreviousMonth = 31;
+        }
+        *ageDays = daysInPreviousMonth + *ageDays;
+    }
+}
+
+=========================
+dll.h
+=========================
+#ifndef _DLL_H_
+#define _DLL_H_
+
+#include <windows.h>  // Include necessary Windows header
+
+#if BUILDING_DLL
+    // Export the functions from the DLL when building it
+    #define DLL_EXPORT __declspec(dllexport) __stdcall
+#else
+    // Import the functions from the DLL when using it
+    #define DLL_EXPORT __declspec(dllimport) __stdcall
+#endif
+
+#ifdef __cplusplus 
+extern "C" {
+#endif 
+
+// Declare the age calculator function
+void DLL_EXPORT calculateAge(int birthYear, int birthMonth, int birthDay, int* ageYears, int* ageMonths, int* ageDays);
+
+#ifdef __cplusplus 
+}
+#endif 
+
+#endif
